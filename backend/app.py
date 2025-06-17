@@ -1,22 +1,36 @@
 # app.py
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import redis
 
 app = Flask(__name__)
-CORS(app)
 r = redis.Redis(host='redis', port=6379, decode_responses=True)
+CORS(app, resources={r"/*": {"origins": ["http://localhost:8080", "http://frontend:80"]}})
 
 GRUPOS_VALIDOS = ['cervecerias', 'universidades', 'farmacias', 'emergencias', 'supermercados']
 
-@app.before_first_request
-def cargar_datos_iniciales():
-    # Solo si no hay datos aún
+with app.app_context():
     if r.dbsize() == 0:
-        r.geoadd("cervecerias", (-58.3816, -34.6037, "Antares Centro"), (-58.4243, -34.5886, "Buller Palermo"))
-        r.geoadd("universidades", (-58.3929, -34.6003, "UBA FADU"), (-58.4219, -34.6124, "UTN Medrano"))
-        r.geoadd("farmacias", (-58.3902, -34.6030, "Farmacity Centro"), (-58.4320, -34.5897, "Farmacia Palermo"))
-        r.geoadd("emergencias", (-58.4089, -34.6039, "Hospital Ramos Mejía"))
-        r.geoadd("supermercados", (-58.3840, -34.6012, "Coto Constitución"), (-58.4262, -34.5956, "Carrefour Palermo"))
+        r.geoadd("cervecerias", 
+            (-58.3816, -34.6037, "Antares Centro"),
+            (-58.4243, -34.5886, "Buller Palermo")
+        )
+        r.geoadd("universidades",
+            (-58.3929, -34.6003, "UBA FADU"),
+            (-58.4219, -34.6124, "UTN Medrano")
+        )
+        r.geoadd("farmacias",
+            (-58.3902, -34.6030, "Farmacity Centro"),
+            (-58.4320, -34.5897, "Farmacia Palermo")
+        )
+        r.geoadd("emergencias", 
+            (-58.4089, -34.6039, "Hospital Ramos Mejía")
+        )
+        r.geoadd("supermercados",
+            (-58.3840, -34.6012, "Coto Constitución"),
+            (-58.4262, -34.5956, "Carrefour Palermo")
+        )
+        print("✅ Datos iniciales cargados en Redis")
 
 @app.route('/add_place', methods=['POST'])
 def add_place():
@@ -50,3 +64,6 @@ def distance():
         return {'error': 'Grupo inválido'}, 400
     dist = r.geodist(grupo, lugar1, lugar2, unit='km')
     return {'distancia_km': dist}
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0')

@@ -1,4 +1,6 @@
-const backendUrl = "http://backend:5000"; // o "http://localhost:5000" si no está en Docker
+const backendUrl = window.location.hostname === 'localhost' 
+  ? 'http://localhost:5000'  // Para desarrollo fuera de Docker
+  : 'http://backend:5000';
 
 let map;
 let markers = [];
