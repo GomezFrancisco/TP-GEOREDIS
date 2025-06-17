@@ -1,5 +1,5 @@
-const backendUrl = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5000'  // Para desarrollo fuera de Docker
+const backendUrl = window.location.host.includes('8080') 
+  ? 'http://localhost:5000' 
   : 'http://backend:5000';
 
 let map;
@@ -58,30 +58,23 @@ document.getElementById('formLugar').addEventListener('submit', async function (
 
 // Busca lugares cercanos en el backend y los muestra en el mapa
 async function obtenerCercanos() {
-  const grupo = document.getElementById('grupo').value;
-  const lat = -34.6037;
-  const lon = -58.3816;
-
   try {
+    const grupo = document.getElementById('grupo').value;
+    const lat = -34.6037;
+    const lon = -58.3816;
+    
+    // Verifica URL antes de hacer fetch
+    console.log("Intentando conectar a:", `${backendUrl}/nearby?grupo=${grupo}&lat=${lat}&lon=${lon}`);
+    
     const res = await fetch(`${backendUrl}/nearby?grupo=${grupo}&lat=${lat}&lon=${lon}`);
+    
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    
     const lugares = await res.json();
-
-    limpiarMapa();
-
-    if (!Array.isArray(lugares) || lugares.length === 0) {
-      alert("No se encontraron lugares cercanos.");
-      return;
-    }
-
-    lugares.forEach(([nombre, distancia]) => {
-      const marker = L.marker([
-        lat + (Math.random() - 0.5) * 0.01, // coordenadas simuladas para demo
-        lon + (Math.random() - 0.5) * 0.01
-      ]).addTo(map).bindPopup(`${nombre}<br>Distancia: ${distancia.toFixed(2)} km`);
-      markers.push(marker);
-    });
+    // ... (procesamiento de lugares)
   } catch (error) {
-    alert("Error al obtener lugares: " + error.message);
+    console.error("Error detallado:", error);
+    alert(`Error al obtener lugares. Ver consola para detalles.`);
   }
 }
 

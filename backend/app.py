@@ -4,8 +4,13 @@ from flask_cors import CORS
 import redis
 
 app = Flask(__name__)
-r = redis.Redis(host='redis', port=6379, decode_responses=True)
-CORS(app, resources={r"/*": {"origins": ["http://localhost:8080", "http://frontend:80"]}})
+r = redis.Redis(
+    host='redis',
+    port=6379,
+    decode_responses=True,
+    socket_connect_timeout=5  # Timeout para evitar bloqueos
+)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 GRUPOS_VALIDOS = ['cervecerias', 'universidades', 'farmacias', 'emergencias', 'supermercados']
 
@@ -42,7 +47,7 @@ def add_place():
     if not all([nombre, lat, lon, grupo]):
         return jsonify({"error": "Faltan datos"}), 400
     # Agrega el lugar al grupo geo
-    redis_client.geoadd(grupo, lon, lat, nombre)
+    r.geoadd(grupo, lon, lat, nombre)
     return jsonify({"message": "Lugar agregado"}), 200
 
 @app.route('/nearby', methods=['GET'])
@@ -52,8 +57,9 @@ def nearby():
     grupo = request.args['grupo']
     if grupo not in GRUPOS_VALIDOS:
         return {'error': 'Grupo inválido'}, 400
-    lugares = r.georadius(grupo, lon, lat, 5, unit='km', withdist=True)
-    return jsonify(lugares)
+    lugares = r.georadius(grupo, lon, lat, 5, unit='km', withdist=True, withcoord=True)
+    resultados = [[nombre, distancia, coord[0], coord[1]] for nombre, distancia, _, coord in lugares]
+    return jsonify(resultados)
 
 @app.route('/distance', methods=['GET'])
 def distance():
